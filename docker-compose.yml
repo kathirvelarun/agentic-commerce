@@ -1,0 +1,126 @@
+services:
+
+  # ── Merchant backend (Spring Boot :8001) ─────────────────────────────────────
+  merchant-backend:
+    build:
+      context: .
+      dockerfile: merchant-backend/Dockerfile
+    image: vic/merchant-backend:1.0.0
+    container_name: reference-merchant-backend
+    ports:
+      - "8001:8001"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:h2:file:/app/data/merchant;AUTO_SERVER=TRUE
+    volumes:
+      - ./merchant-backend/data:/app/data
+    networks:
+      - vic-reference-agent-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8001/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ── Merchant MCP server (Spring AI :8002) ─────────────────────────────────────
+  merchant-mcp:
+    build:
+      context: .
+      dockerfile: merchant-mcp/Dockerfile
+    image: vic/merchant-mcp:1.0.0
+    container_name: reference-merchant-mcp
+    ports:
+      - "8002:8002"
+    environment:
+      - API_BASE_URL=http://merchant-backend:8001
+    depends_on:
+      merchant-backend:
+        condition: service_healthy
+    networks:
+      - vic-reference-agent-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8002/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ── Agent backend (Spring Boot + Spring AI :8000) ─────────────────────────────
+  agent-backend:
+    build:
+      context: .
+      dockerfile: agent-backend/Dockerfile
+    image: vic/agent-backend:1.0.0
+    container_name: reference-agent-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - MERCHANT_MCP_URL=http://merchant-mcp:8002/mcp
+      # ── Copy values from your .env file ──────────────────────────────────────
+      - LLM_PROVIDER=${LLM_PROVIDER}
+      - LLM_API_KEY=${LLM_API_KEY}
+      - LLM_MODEL=${LLM_MODEL}
+      - LLM_BASE_URL=${LLM_BASE_URL:-}
+      - VTS_BASE_URL=${VTS_BASE_URL}
+      - VTS_API_KEY=${VTS_API_KEY}
+      - VTS_SHARED_SECRET=${VTS_SHARED_SECRET}
+      - VIC_BASE_URL=${VIC_BASE_URL}
+      - VIC_API_KEY=${VIC_API_KEY}
+      - VIC_SHARED_SECRET=${VIC_SHARED_SECRET}
+      - TR_ID=${TR_ID}
+      - TR_CLIENT_ID=${TR_CLIENT_ID}
+      - TR_APP_ID=${TR_APP_ID}
+      - TR_ENC_API_KEY=${TR_ENC_API_KEY}
+      - TR_ENC_SHARED_SECRET=${TR_ENC_SHARED_SECRET}
+      - MLE_ENC_CERT=${MLE_ENC_CERT}
+      - MLE_KEY_ID=${MLE_KEY_ID}
+      - MLE_DEC_KEY=${MLE_DEC_KEY}
+    volumes:
+      - ./agent-backend/data:/app/data
+    depends_on:
+      merchant-mcp:
+        condition: service_healthy
+    networks:
+      - vic-reference-agent-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8000/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ── Agent frontend (React :3000) ─────────────────────────────────────────────
+  # NOTE: Frontend services are UNCHANGED from the original repository.
+  reference-agent-frontend:
+    build:
+      context: ./reference-agent-frontend
+      dockerfile: Dockerfile
+    container_name: reference-agent-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      agent-backend:
+        condition: service_healthy
+    networks:
+      - vic-reference-agent-network
+    restart: unless-stopped
+
+  # ── Merchant frontend (React :3001) ──────────────────────────────────────────
+  reference-merchant-frontend:
+    build:
+      context: ./reference-merchant-frontend
+      dockerfile: Dockerfile
+    container_name: reference-merchant-frontend
+    ports:
+      - "3001:3001"
+    depends_on:
+      merchant-backend:
+        condition: service_healthy
+    networks:
+      - vic-reference-agent-network
+    restart: unless-stopped
+
+networks:
+  vic-reference-agent-network:
+    driver: bridge
