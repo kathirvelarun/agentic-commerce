@@ -1,0 +1,24 @@
+server:
+  port: 8002
+
+spring:
+  application:
+    name: merchant-mcp
+  ai:
+    mcp:
+      server:
+        enabled: true
+        name: merchant-mcp-server
+        version: 1.0.0
+        # Explicit SSE endpoint — client connects to http://localhost:8002/sse
+        sse-endpoint: /sse
+
+merchant:
+  backend:
+    url: http://localhost:8001
+
+logging:
+  level:
+    com.commerce: DEBUG
+    org.springframework.ai: DEBUG
+    io.modelcontextprotocol: DEBUG

@@ -1,0 +1,45 @@
+server:
+  port: 8000
+
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  application:
+    name: agent-backend
+  datasource:
+    url: jdbc:h2:mem:agentdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  h2:
+    console:
+      enabled: true
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      base-url: https://api.openai.com
+      chat:
+        options:
+          model: gpt-4o-mini
+          temperature: 0.7
+          stream: false
+    mcp:
+      client:
+        enabled: true
+        # MUST be true — tools are fetched at startup so getToolCallbacks() is populated
+        initialized-on-start: true
+        request-timeout: 30s
+        sse:
+          connections:
+            merchant-mcp:
+              url: http://localhost:8002/sse
+
+logging:
+  level:
+    com.commerce: DEBUG
+    org.springframework.ai: DEBUG   # shows tool registration and invocations
+    io.modelcontextprotocol: DEBUG  # shows MCP protocol messages
