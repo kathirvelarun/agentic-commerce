@@ -1,127 +1,303 @@
-# VIC Reference Agent — Java / Spring Boot / Spring AI
+# 🛍️ NexCart — Agentic AI Commerce Platform
 
-Java migration of the [Visa Intelligent Commerce Reference Agent](https://github.com/visa/vic-reference-agent).
+> End-to-end agentic commerce flow with AI-driven product discovery and checkout, built with **Java 21**, **Spring Boot 3.3**, **Spring AI**, **OpenAI GPT-4o-mini**, and **React**.
 
-## Stack
+---
 
-| Service | Port | Technology |
-|---|---|---|
-| `agent-backend` | 8000 | Spring Boot 3.3 + Spring AI 1.0 + Nimbus JOSE |
-| `merchant-backend` | 8001 | Spring Boot 3.3 + Spring Data JPA + H2 |
-| `merchant-mcp` | 8002 | Spring Boot 3.3 + Spring AI MCP Server |
-| `reference-agent-frontend` | 3000 | React / Vite (unchanged) |
-| `reference-merchant-frontend` | 3001 | React / Vite (unchanged) |
+## 🏗️ Architecture Overview
 
-## Prerequisites
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        React Frontend (Port 3000)                    │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │
+│  │  Shop Page   │  │  AI Agent    │  │  Checkout    │              │
+│  │  (Catalog)   │  │  Chat UI     │  │  + Orders    │              │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘              │
+└─────────┼────────────────┼────────────────  ┼───────────────────────┘
+          │                │                  │
+          ▼                ▼                  ▼
+┌─────────────────┐   ┌────────────────────────┐
+│ Merchant Backend│   │    Agent Backend        │
+│   (Port 8001)   │   │     (Port 8000)         │
+│                 │   │                         │
+│ • Products API  │   │ • Chat API              │
+│ • Cart API      │   │ • Card Management       │
+│ • Orders API    │   │ • Spring AI ChatClient  │
+│ • H2 Database   │◄──│ • MCP Client            │
+└─────────────────┘   └────────────┬────────────┘
+                                   │ SSE (MCP Protocol)
+                                   ▼
+                      ┌────────────────────────┐
+                      │  Merchant MCP Server   │
+                      │     (Port 8002)        │
+                      │                        │
+                      │ @Tool search_products  │
+                      │ @Tool add_to_cart      │
+                      │ @Tool checkout         │
+                      │ @Tool get_orders       │
+                      │ ... 9 tools total      │
+                      └────────────────────────┘
+```
 
+## 🚀 Modules
+
+### 1. 🤖 Agent Backend (Port 8000)
+AI Shopping Agent powered by Spring AI and GPT-4o-mini.
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/chat` | POST | Send message to AI agent |
+| `/api/v1/chat/{sessionId}/history` | GET | Get conversation history |
+| `/api/v1/chat/{sessionId}` | DELETE | Clear chat session |
+| `/api/v1/users/{userId}/cards` | GET | List payment cards |
+| `/api/v1/users/{userId}/cards` | POST | Add payment card |
+| `/api/v1/users/{userId}/cards/{cardId}` | DELETE | Remove card |
+| `/api/v1/users/{userId}/cards/{cardId}/default` | PUT | Set default card |
+| `/api/v1/health` | GET | Health check |
+
+**Chat Request:**
+```json
+{
+  "sessionId": "session-123",
+  "message": "Show me the best headphones under $300",
+  "userId": "user-001"
+}
+```
+
+**Chat Response:**
+```json
+{
+  "sessionId": "session-123",
+  "message": "I found some great headphones...",
+  "role": "assistant",
+  "timestamp": "2024-01-01T12:00:00",
+  "intent": "SEARCH"
+}
+```
+
+---
+
+### 2. 🏪 Merchant Backend (Port 8001)
+REST API for Product Catalog, Shopping Cart, and Order Management.
+
+#### Product Catalog
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/products` | GET | Search/list products (`?query=...&category=...`) |
+| `/api/v1/products/{id}` | GET | Get product by ID |
+| `/api/v1/products/categories` | GET | Get all categories |
+| `/api/v1/products` | POST | Create product |
+
+#### Shopping Cart
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/users/{userId}/cart` | GET | Get or create cart |
+| `/api/v1/users/{userId}/cart/items` | POST | Add item to cart |
+| `/api/v1/users/{userId}/cart/items/{itemId}` | PUT | Update item quantity |
+| `/api/v1/users/{userId}/cart/items/{itemId}` | DELETE | Remove item |
+| `/api/v1/users/{userId}/cart` | DELETE | Clear cart |
+
+#### Orders / Checkout
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/users/{userId}/cart/{cartId}/checkout` | POST | Process checkout |
+| `/api/v1/users/{userId}/orders` | GET | Get order history |
+| `/api/v1/orders/{orderId}` | GET | Get order by ID |
+
+---
+
+### 3. 🔌 Merchant MCP Server (Port 8002)
+Spring AI MCP Server exposing 9 tools via Server-Sent Events.
+
+| MCP Tool | Description |
+|----------|-------------|
+| `search_products` | Search product catalog with query + category filters |
+| `get_product_details` | Get full product details by ID |
+| `get_categories` | List all product categories |
+| `get_cart` | Get user's current cart |
+| `add_to_cart` | Add product to cart |
+| `update_cart_item` | Update item quantity (0 = remove) |
+| `remove_from_cart` | Remove specific item |
+| `checkout` | Process payment and create order |
+| `get_orders` | Get user order history |
+
+**MCP Connection:** `http://localhost:8002/sse`
+
+---
+
+### 4. ⚛️ React Frontend (Port 3000)
+Modern dark-themed e-commerce UI.
+
+| Page | Route | Features |
+|------|-------|----------|
+| Shop | `/` | Product catalog, search, filters, cart |
+| AI Agent | `/agent` | Conversational shopping with AI |
+| Checkout | `/checkout` | Card selection, order summary |
+| Confirmation | `/order-confirmation` | Order success |
+| Orders | `/orders` | Order history |
+| Cards | `/cards` | Payment card management |
+
+---
+
+## ⚡ Quick Start
+
+### Prerequisites
 - Java 21+
 - Maven 3.9+
-- Docker & Docker Compose (for containerised deployment)
+- Node.js 20+
+- OpenAI API Key
 
-## Configuration
-
-Copy the original `.env` to the project root. All environment variable names are identical to the Python version.
-
+### 1. Start Merchant Backend
 ```bash
-cp /path/to/original/.env .env
-```
-
-## Running with Docker Compose
-
-```bash
-# Build and start all services
-docker compose up --build
-
-# Stop
-docker compose down
-```
-
-## Running locally (development)
-
-```bash
-# Start merchant-backend first (no external deps)
 cd merchant-backend
 mvn spring-boot:run
+# Starts on http://localhost:8001
+# Auto-seeds 16 products across 7 categories
+```
 
-# Start merchant-mcp (depends on merchant-backend)
+### 2. Start Merchant MCP Server
+```bash
 cd merchant-mcp
 mvn spring-boot:run
-
-# Start agent-backend (depends on merchant-mcp + VDP credentials in env)
-cd agent-backend
-export $(cat ../.env | xargs)
-mvn spring-boot:run
+# Starts on http://localhost:8002
+# MCP SSE endpoint: http://localhost:8002/sse
 ```
 
-## Building fat JARs
-
+### 3. Start Agent Backend
 ```bash
-# Build all modules from parent
-mvn package -DskipTests
-
-# Individual module
-mvn package -pl agent-backend -am -DskipTests
+cd agent-backend
+export OPENAI_API_KEY=your-api-key-here
+mvn spring-boot:run
+# Starts on http://localhost:8000
 ```
 
-## Project Structure
-
-```
-vic-reference-agent-java/
-├── pom.xml                        # Parent POM (Spring Boot 3.3 + Spring AI 1.0 BOM)
-├── docker-compose.yml
-├── agent-backend/                 # Port 8000 — AI agent + VDP client
-│   ├── src/main/java/com/visa/vic/agent/
-│   │   ├── config/                # AppConfig, AiConfig, JweKeyConfig, CorsConfig
-│   │   ├── controller/            # 5 REST controllers + exception handler + VDP logging
-│   │   ├── dto/                   # Request/Response records (cards, chat, commerce, passkey)
-│   │   ├── entity/                # 6 JPA entities (Card, CardArt, Intent, Mandate, Transaction…)
-│   │   ├── repository/            # 7 Spring Data JPA repositories
-│   │   ├── service/               # AgentService, ChatService, CardService, PasskeyService, CommerceService
-│   │   │   └── vdp/               # VdpClient (HMAC signing, JWE MLE, all VTS/VIC API methods)
-│   │   └── util/                  # Constants, Base64UrlUtil
-│   └── src/main/resources/application.properties
-├── merchant-backend/              # Port 8001 — e-commerce catalog/cart/orders
-│   ├── src/main/java/com/visa/vic/merchant/
-│   │   ├── config/                # CorsConfig, GlobalExceptionHandler
-│   │   ├── controller/            # ProductController, CartController, OrderController
-│   │   ├── dto/                   # MerchantDtos (sealed interface with all records)
-│   │   ├── entity/                # Product, Cart, CartItem, Order, OrderItem
-│   │   ├── repository/            # 5 Spring Data JPA repositories
-│   │   └── service/               # ProductService, CartService, OrderService
-│   └── src/main/resources/
-│       ├── application.properties
-│       └── data.sql               # 19 sample products (seed on first boot)
-└── merchant-mcp/                  # Port 8002 — Spring AI MCP Server (6 tools)
-    ├── src/main/java/com/visa/vic/mcp/
-    │   ├── config/McpConfig.java  # RestClient bean
-    │   └── tools/MerchantTools.java  # 6 @Tool methods
-    └── src/main/resources/application.properties
+### 4. Start Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+# Starts on http://localhost:3000
 ```
 
-## Key Design Decisions
+### Docker Compose (All at once)
+```bash
+export OPENAI_API_KEY=your-api-key
+docker-compose up --build
+# Frontend: http://localhost:3000
+```
 
-### Python async → Java virtual threads
-All `async def` route handlers map to standard `@RestController` methods.
-`spring.threads.virtual.enabled=true` enables Project Loom virtual threads globally,
-giving equivalent non-blocking throughput with no async/await syntax.
+---
 
-### LangChain + LangGraph → Spring AI ChatClient
-`create_agent()` + `InMemorySaver` → `ChatClient` + `MessageChatMemoryAdvisor`.
-The conversation thread ID (`current_thread_id`) is a volatile field on `AgentService`.
+## 🤖 AI Agent — How It Works
 
-### MCP StreamableHTTP client/server
-Python `streamablehttp_client` + Node.js `StreamableHTTPServerTransport` →
-Spring AI `McpSyncClient` (client) + `spring-ai-starter-mcp-server-webmvc` (server).
+The AI agent uses **Spring AI** with **MCP (Model Context Protocol)** for tool-based interactions:
 
-### JWE encryption (authlib → Nimbus JOSE)
-- MLE (RSA-OAEP-256 + A256GCM): `RSAEncrypter` / `RSADecrypter`
-- Field-level (A256GCMKW + A256GCM): `AESEncrypter`
-- JWT unverified claims: `SignedJWT.parse().getPayload().toJSONObject()`
+1. User sends a message → `POST /api/v1/chat`
+2. Agent Backend creates a `ChatClient` with MCP tool callbacks
+3. Spring AI sends the message + tool definitions to GPT-4o-mini
+4. OpenAI decides which MCP tools to invoke (e.g., `search_products`)
+5. Spring AI calls the Merchant MCP Server via SSE
+6. MCP Server invokes the tool → calls Merchant Backend REST API
+7. Results flow back: MCP → Spring AI → OpenAI → final response
+8. Frontend displays the AI's response with product cards
 
-### HMAC-SHA256 signing
-`hmac.new(secret, payload, sha256).hexdigest()` → `javax.crypto.Mac` HmacSHA256 + `Hex.encodeHexString()`.
+### Example Conversations
 
-### SQLite → H2
-Both are embedded file-based databases.  H2 in file mode (`jdbc:h2:file:./data/…`)
-provides identical behaviour for the reference implementation.
-For production, swap to PostgreSQL by changing the datasource URL and adding the driver.
+**Product Discovery:**
+> "Show me wireless headphones under $300"
+→ AI calls `search_products(query="wireless headphones", category="Electronics")`
+→ Returns matching products with prices and ratings
+
+**Cart Management:**
+> "Add the Sony WH-1000XM5 to my cart"
+→ AI calls `add_to_cart(userId, productId, 1)`
+→ Confirms item added with updated cart total
+
+**Checkout:**
+> "Checkout with my Visa card ending in 4242"
+→ AI calls `get_cart` → `checkout(userId, cartId, "4242", "Visa")`
+→ Returns order confirmation with order ID
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| AI Model | OpenAI GPT-4o-mini |
+| AI Framework | Spring AI 1.0.0-M3 |
+| MCP Protocol | Spring AI MCP Server/Client |
+| Backend | Java 21, Spring Boot 3.3 |
+| Database | H2 (in-memory, dev) |
+| Frontend | React 18, Vite, Tailwind CSS |
+| State | Zustand |
+| HTTP Client | Axios |
+| Containerization | Docker, Docker Compose |
+
+---
+
+## 📁 Project Structure
+
+```
+agentic-commerce/
+├── agent-backend/          # Port 8000 — AI Agent + Card Mgmt
+│   ├── src/main/java/com/commerce/agent/
+│   │   ├── controller/AgentController.java
+│   │   ├── service/ShoppingAgentService.java
+│   │   ├── model/AgentCard.java
+│   │   ├── dto/AgentDtos.java
+│   │   └── config/AgentConfig.java
+│   └── src/main/resources/application.yml
+│
+├── merchant-backend/       # Port 8001 — Products, Cart, Orders
+│   ├── src/main/java/com/commerce/merchant/
+│   │   ├── controller/MerchantController.java
+│   │   ├── service/{ProductService, CartOrderService}.java
+│   │   ├── model/{Product, Cart, CartItem, Order}.java
+│   │   ├── repository/
+│   │   └── config/DataSeeder.java   ← Seeds 16 products
+│   └── src/main/resources/application.yml
+│
+├── merchant-mcp/           # Port 8002 — MCP Tool Server
+│   ├── src/main/java/com/commerce/mcp/
+│   │   ├── tool/MerchantTools.java  ← 9 @Tool methods
+│   │   ├── service/MerchantClientService.java
+│   │   └── config/McpConfig.java
+│   └── src/main/resources/application.yml
+│
+├── frontend/               # Port 3000 — React UI
+│   ├── src/
+│   │   ├── App.jsx
+│   │   ├── pages/{ShopPage, AgentPage, CheckoutPage, ...}
+│   │   ├── components/{Navbar, CartSidebar, ProductCard, ui}
+│   │   ├── services/api.js
+│   │   └── store/index.js
+│   └── vite.config.js
+│
+└── docker-compose.yml
+```
+
+---
+
+## 🔑 Environment Variables
+
+| Variable | Service | Description |
+|----------|---------|-------------|
+| `OPENAI_API_KEY` | agent-backend | Your OpenAI API key |
+| `MERCHANT_BACKEND_URL` | merchant-mcp | Merchant Backend URL (default: http://localhost:8001) |
+
+---
+
+## 📦 Seeded Product Catalog
+
+The Merchant Backend auto-seeds **16 products** across **7 categories**:
+
+| Category | Products |
+|----------|---------|
+| Electronics | Sony WH-1000XM5, AirPods Pro, Samsung QLED TV, iPad Pro, MacBook Air M3 |
+| Footwear | Nike Air Max 270, Adidas Ultraboost 23 |
+| Clothing | Levi's 501 Jeans, Patagonia Down Jacket |
+| Kitchen | Instant Pot, KitchenAid Stand Mixer |
+| Home | Dyson V15 Vacuum |
+| Sports | Yoga Mat, Theragun Pro |
+| Books | The Psychology of Money, Atomic Habits |
