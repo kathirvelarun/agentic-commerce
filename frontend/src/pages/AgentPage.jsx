@@ -395,13 +395,19 @@ export default function AgentPage() {
       let finalMessage  = data.message || ''
       let finalProducts = data.products || []
 
-      if (finalProducts.length === 0 && finalMessage.trim().startsWith('{')) {
+      // Fallback: extract JSON from anywhere in the message (LLM may prefix text before {…})
+      if (finalProducts.length === 0 && finalMessage.includes('{')) {
         try {
-          const stripped = finalMessage
-            .replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim()
-          const parsed = JSON.parse(stripped)
-          if (parsed.message) finalMessage = parsed.message
-          if (Array.isArray(parsed.products)) finalProducts = parsed.products
+          const stripped = finalMessage.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim()
+          const start = stripped.indexOf('{')
+          const end   = stripped.lastIndexOf('}')
+          if (start !== -1 && end > start) {
+            const parsed = JSON.parse(stripped.slice(start, end + 1))
+            if (parsed.products && Array.isArray(parsed.products) && parsed.products.length > 0) {
+              finalProducts = parsed.products
+              finalMessage  = parsed.message || stripped.slice(0, start).trim() || finalMessage
+            }
+          }
         } catch {}
       }
 

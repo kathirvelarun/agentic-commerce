@@ -51,7 +51,7 @@ export default function Navbar() {
                 <span className="text-white font-black text-sm tracking-tight leading-none">AMEX</span>
               </div>
               <span className="font-bold text-ink-primary text-base hidden sm:block tracking-tight">
-                Commerce
+                Agentic Commerce
               </span>
             </Link>
 

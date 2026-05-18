@@ -9,7 +9,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @Slf4j
@@ -34,19 +37,39 @@ public class ProductService {
         if (category != null && !category.isBlank()) {
             products = productRepository.findByCategoryIgnoreCase(category);
             if (query != null && !query.isBlank()) {
-                String q = query.toLowerCase();
+                String[] words = query.toLowerCase().split("\\s+");
                 products = products.stream()
-                        .filter(p -> p.getName().toLowerCase().contains(q) ||
-                                     (p.getDescription() != null && p.getDescription().toLowerCase().contains(q)))
+                        .filter(p -> Arrays.stream(words).anyMatch(w -> matchesProduct(p, w)))
                         .toList();
             }
         } else if (query != null && !query.isBlank()) {
-            products = productRepository.searchProducts(query);
+            products = searchByWords(query);
         } else {
             products = productRepository.findAll();
         }
         List<ProductResponse> responses = products.stream().map(this::toResponse).toList();
         return new ProductSearchResponse(responses, responses.size(), query);
+    }
+
+    private List<Product> searchByWords(String query) {
+        String[] words = query.toLowerCase().split("\\s+");
+        if (words.length == 1) {
+            return productRepository.searchProducts(words[0]);
+        }
+        // Multi-word: union of per-word results, preserving order, deduped by id
+        Set<String> seen = new LinkedHashSet<>();
+        return Arrays.stream(words)
+                .flatMap(word -> productRepository.searchProducts(word).stream())
+                .filter(p -> seen.add(p.getId()))
+                .toList();
+    }
+
+    private boolean matchesProduct(Product p, String word) {
+        return (p.getName() != null && p.getName().toLowerCase().contains(word)) ||
+               (p.getDescription() != null && p.getDescription().toLowerCase().contains(word)) ||
+               (p.getCategory() != null && p.getCategory().toLowerCase().contains(word)) ||
+               (p.getBrand() != null && p.getBrand().toLowerCase().contains(word)) ||
+               (p.getTags() != null && p.getTags().toLowerCase().contains(word));
     }
 
     public List<String> getCategories() {

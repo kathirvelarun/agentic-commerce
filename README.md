@@ -167,7 +167,6 @@ mvn spring-boot:run
 ```bash
 cd agent-backend
 export OPENAI_API_KEY=your-api-key-here
-export OPENAI_API_KEY=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
 mvn spring-boot:run
 # Starts on http://localhost:8000
 ```
