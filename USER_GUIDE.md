@@ -4,7 +4,7 @@ Follow these steps to experience the complete agentic commerce flow.
 
 > 📹 **Video Walkthrough:** Watch the Demo Video for a complete visual guide. Timestamps are noted for each step below.
 
-<video src="Demo-Agentic-Commerce.mp4" controls title="Demo - Agentic Commerce" width="100%"></video>
+[Demo Video](https://github.com/user-attachments/assets/312d94a7-cc69-4e94-86f2-ea3408c2a773)
 
 ---
 
