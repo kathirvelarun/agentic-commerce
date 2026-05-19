@@ -40,6 +40,10 @@ public class AgentCard {
     @Column(nullable = false)
     private boolean isDefault;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private String status = "PENDING";
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

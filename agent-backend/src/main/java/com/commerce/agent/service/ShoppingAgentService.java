@@ -491,8 +491,17 @@ public class ShoppingAgentService {
         return "Unknown";
     }
 
+    public CardDto activateCard(String userId, String cardId) {
+        AgentCard c = cardRepository.findById(cardId)
+                .filter(card -> card.getUserId().equals(userId))
+                .orElseThrow(() -> new RuntimeException("Card not found"));
+        c.setStatus("ACTIVE");
+        return mapCard(cardRepository.save(c));
+    }
+
     private CardDto mapCard(AgentCard c) {
         return new CardDto(c.getId(), c.getLast4(), c.getBrand(),
-                c.getExpiryMonth(), c.getExpiryYear(), c.getCardholderName(), c.isDefault());
+                c.getExpiryMonth(), c.getExpiryYear(), c.getCardholderName(),
+                c.isDefault(), c.getStatus());
     }
 }

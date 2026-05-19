@@ -39,7 +39,8 @@ public class AgentDtos {
         String expiryMonth,
         String expiryYear,
         String cardholderName,
-        boolean isDefault
+        boolean isDefault,
+        String status
     ) {}
 
     public record AddCardRequest(

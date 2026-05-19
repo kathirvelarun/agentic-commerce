@@ -1,0 +1,157 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Amex Design System ─────────────────────────────────────── */
+:root {
+  --amex-blue:        #006FCF;
+  --amex-blue-dark:   #00539C;
+  --amex-blue-light:  #E8F3FC;
+  --amex-navy:        #002663;
+  --amex-gold:        #B5A36A;
+  --bg-white:         #FFFFFF;
+  --bg-light:         #F7F8FA;
+  --bg-section:       #F0F4F9;
+  --border:           #D9DCE0;
+  --border-light:     #ECEEF1;
+  --text-primary:     #1A1A1A;
+  --text-secondary:   #53565A;
+  --text-muted:       #8A8D91;
+  --text-link:        #006FCF;
+  --success:          #007A3D;
+  --error:            #C9252D;
+  --warning:          #B45309;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg-white);
+  color: var(--text-primary);
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg-light); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Amex card surface */
+.amex-card {
+  background: #fff;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  transition: box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.amex-card:hover {
+  box-shadow: 0 4px 16px rgba(0,111,207,0.10);
+  border-color: var(--amex-blue);
+}
+
+/* Blue pill badge */
+.amex-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 2px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+}
+
+/* Blue box logo style */
+.amex-logo-box {
+  background: var(--amex-blue);
+  color: #fff;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+/* Input fields */
+input:focus, textarea:focus, select:focus {
+  outline: 2px solid var(--amex-blue);
+  outline-offset: 0;
+  border-color: var(--amex-blue) !important;
+}
+
+/* Section divider */
+.amex-divider {
+  height: 1px;
+  background: var(--border-light);
+  margin: 0;
+}
+
+/* ── Keyframe animations ──────────────────────────────────────── */
+
+/* Notification progress bar shrink */
+@keyframes shrinkBar {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+
+/* Slide up reveal */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-in { animation: fadeSlideUp 0.3s ease-out; }
+
+/* ── Chat bubbles ─────────────────────────────────────────────── */
+.bubble-user {
+  background: var(--amex-blue);
+  color: #fff;
+  border-radius: 18px 18px 4px 18px;
+}
+.bubble-ai {
+  background: var(--bg-light);
+  border: 1px solid var(--border-light);
+  color: var(--text-primary);
+  border-radius: 18px 18px 18px 4px;
+}
+
+/* Star rating */
+.star-filled { color: #F5A623; }
+.star-empty  { color: #D9DCE0; }
+
+/* Product image hover zoom */
+.product-img-wrap { overflow: hidden; }
+.product-img-wrap img { transition: transform 0.4s ease; }
+.product-img-wrap:hover img { transform: scale(1.04); }
+
+/* Amex blue button */
+.btn-amex {
+  background: var(--amex-blue);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-amex:hover    { background: var(--amex-blue-dark); }
+.btn-amex:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-outline {
+  background: transparent;
+  color: var(--amex-blue);
+  border: 1.5px solid var(--amex-blue);
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-outline:hover { background: var(--amex-blue-light); }

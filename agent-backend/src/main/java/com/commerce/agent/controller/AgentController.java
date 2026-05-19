@@ -107,6 +107,17 @@ public class AgentController {
         return ResponseEntity.ok(agentService.setDefaultCard(userId, cardId));
     }
 
+    /**
+     * PUT /api/v1/users/{userId}/cards/{cardId}/activate
+     * Activate a card after passkey verification
+     */
+    @PutMapping("/users/{userId}/cards/{cardId}/activate")
+    public ResponseEntity<CardDto> activateCard(
+            @PathVariable String userId,
+            @PathVariable String cardId) {
+        return ResponseEntity.ok(agentService.activateCard(userId, cardId));
+    }
+
     // ==================== FLOW LOGS ====================
 
     /** GET /api/v1/logs — all logs (latest first, max 200) */
